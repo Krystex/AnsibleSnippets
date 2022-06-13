@@ -1,0 +1,12 @@
+- name: Tmux
+  hosts: deployment
+  tasks:
+  - name: Install tmux
+    apt:
+      pkg: tmux
+      state: present
+
+  - name: Install tmux config
+    copy:
+      src: ./data/.tmux.conf
+      dest: ~/.tmux.conf
