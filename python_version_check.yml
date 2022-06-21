@@ -1,0 +1,7 @@
+- name: Python 
+  hosts: deployment
+  tasks:
+  - name: Ensure python version >= 3.6.0
+    assert:
+      that: ansible_python_version is version('3.6.0', '>=')
+      msg: "Python version must be at least 3.6"
