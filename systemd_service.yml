@@ -1,0 +1,43 @@
+- name: Install own systemd service 
+  hosts: deployment
+  tasks:
+  - name: Download node_exporter
+    get_url:
+      url: "{{ node_exporter_url }}"
+      dest: /tmp/node_exporter-{{node_exporter_version}}.tar.gz
+
+  - name: Unpack node_exporter
+    unarchive:
+      src: /tmp/node_exporter-{{node_exporter_version}}.tar.gz
+      remote_src: yes
+      dest: /tmp/
+
+  # - name: Make node_exporter executable
+  #   file:
+  #     path: /tmp/{{node_exporter_folder}}/node_exporter
+  #     mode: a+x
+
+  - name: Copy node_exporter to binaries
+    become: yes
+    copy:
+      remote_src: yes
+      src: /tmp/{{node_exporter_folder}}/node_exporter
+      dest: /usr/bin/node_exporter
+      mode: a+x
+
+  - name: Create new node_exporter service
+    become: yes
+    copy:
+      src: ./data/node_exporter.service
+      dest: /lib/systemd/system/node_exporter.service
+
+  - name: Reload systemctl daemon
+    become: yes
+    command: systemctl daemon-reload
+  
+  - name: Start node_exporter service
+    become: yes
+    service:
+      name: node_exporter.service
+      enabled: yes
+      state: started
