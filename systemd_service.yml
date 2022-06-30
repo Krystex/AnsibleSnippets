@@ -41,3 +41,13 @@
       name: node_exporter.service
       enabled: yes
       state: started
+
+  - name: Collect info about node_exporter service
+    service_facts:
+    register: services_state
+
+  - name: Assure node_exporter service is running
+    assert:
+      that: services_state.ansible_facts.services["node_exporter.service"].state == "running"
+      success_msg: "node_exporter service is running!"
+      fail_msg: "node_exporter service isn't working :("
