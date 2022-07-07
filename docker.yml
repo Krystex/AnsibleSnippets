@@ -1,0 +1,63 @@
+# NOTE: Only implemented for Ubuntu
+- name: Install docker
+  hosts: deployment
+  tasks:
+  - name: Install required software
+    become: yes
+    apt:
+      pkg:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+      - python3-pip
+      - virtualenv
+      - python3-setuptools
+      state: latest
+      update_cache: true
+
+  - name: Make sure distro is Ubuntu
+    assert:
+      that: ansible_distribution == 'Ubuntu'
+      msg: Playbook only implemented for Ubuntu!
+
+  - name: Add Docker GPG apt key
+    become: yes
+    apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      state: present
+    when: ansible_distribution == 'Ubuntu'
+    
+  - name: Add Docker Repository
+    become: yes
+    apt_repository:
+      repo: deb https://download.docker.com/linux/ubuntu focal stable
+      state: present
+    when: ansible_distribution == 'Ubuntu'
+
+  - name: Update APT
+    become: yes
+    apt:
+      update_cache: yes
+
+  - name: Update apt and install docker-ce
+    become: yes
+    apt:
+      name: docker-ce
+      state: latest
+    tags: install_docker
+
+  - name: Persist docker config
+    become: yes
+    copy:
+      src: ./data/docker-daemon.json
+      dest: /etc/docker/daemon.json
+    tags: docker_config
+
+  - name: Restart docker
+    become: yes
+    systemd:
+      name: docker
+      enabled: yes
+      state: restarted
+    tags: docker_service
