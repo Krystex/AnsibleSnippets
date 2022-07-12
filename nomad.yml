@@ -1,0 +1,67 @@
+- name: Nomad provisioning
+  hosts: server
+  gather_facts: no
+  vars:
+    nomad_version: "1.3.1"
+    nomad_arch: "linux_amd64"
+    # Automatically generated, should not need input
+    nomad_url: "https://releases.hashicorp.com/nomad/{{ nomad_version }}/nomad_{{ nomad_version }}_{{ nomad_arch }}.zip"
+    nomad_dlpath: "/tmp/nomad-{{ nomad_version }}.zip"
+  tasks:
+  - name: Copy config
+    become: yes
+    copy:
+      src: ./data/nomad.hcl
+      dest: /etc/nomad
+
+  - name: Download nomad
+    get_url:
+      url: "{{ nomad_url }}"
+      dest: "{{ nomad_dlpath }}"
+  
+  - name: Unpack nomad
+    unarchive:
+      src: "{{ nomad_dlpath }}"
+      remote_src: yes
+      dest: /tmp/
+    register: unpacked
+
+  - name: Make nomad executable
+    file:
+      path: /tmp/nomad
+      mode: a+x
+
+  - name: Copy nomad to binaries
+    become: yes
+    copy:
+      remote_src: yes
+      src: /tmp/nomad
+      dest: /usr/bin/nomad
+      mode: a+x
+
+  - name: Create new nomad service
+    become: yes
+    copy:
+      src: ./data/nomad.service
+      dest: /lib/systemd/system/nomad.service
+
+  - name: Reload systemctl daemon
+    become: yes
+    command: systemctl daemon-reload
+  
+  - name: Start nomad service
+    become: yes
+    service:
+      name: nomad.service
+      enabled: yes
+      state: restarted
+
+  - name: Collect info about nomad service
+    service_facts:
+    register: services_state
+
+  - name: Assure nomad service is running
+    assert:
+      that: services_state.ansible_facts.services["nomad.service"].state == "running"
+      success_msg: "Nomad service is running!"
+      fail_msg: "Nomad service isn't working :("
