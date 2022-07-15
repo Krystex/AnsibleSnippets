@@ -61,3 +61,11 @@
       enabled: yes
       state: restarted
     tags: docker_service
+
+  - name: Add current user to docker
+    become: yes
+    user:
+      name: "{{ ansible_user_id }}"
+      groups: docker
+      append: yes
+    tags: user
